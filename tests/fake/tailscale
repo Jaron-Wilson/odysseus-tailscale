@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+"""A stand-in `tailscale` for tests and headless checks: canned JSON, no
+network, never the real CLI. Every call is appended to $FAKE_TAILSCALE_LOG
+(if set), so tests can check that only read-only commands were run."""
+import json
+import os
+import sys
+
+args = sys.argv[1:]
+log = os.environ.get("FAKE_TAILSCALE_LOG")
+if log:
+    with open(log, "a") as f:
+        f.write(json.dumps(args) + "\n")
+
+STATUS = {
+    "Self": {"HostName": "home-server", "DNSName": "home-server.tail0example.ts.net.",
+             "TailscaleIPs": ["100.64.0.1", "fd7a:115c:a1e0::1"], "OS": "linux"},
+    "Peer": {
+        "a": {"HostName": "GAMING-PC", "DNSName": "gaming-pc.tail0example.ts.net.",
+              "TailscaleIPs": ["100.64.0.2"], "OS": "windows", "Online": True, "LastSeen": "2026-10-22T10:00:00Z"},
+        "b": {"HostName": "laptop", "DNSName": "laptop.tail0example.ts.net.",
+              "TailscaleIPs": ["100.64.0.3"], "OS": "linux", "Online": False, "LastSeen": "2026-10-20T10:00:00Z"},
+        "c": {"HostName": "Phone", "DNSName": "phone.tail0example.ts.net.",
+              "TailscaleIPs": ["100.64.0.4"], "OS": "android", "Online": True, "LastSeen": "2026-10-22T10:00:00Z"},
+        "d": {"HostName": "friends-box", "DNSName": "friends-box.tail9other.ts.net.",
+              "TailscaleIPs": ["100.64.0.9"], "OS": "linux", "Online": True, "LastSeen": "2026-10-22T10:00:00Z"},
+    },
+}
+SERVE = {
+    "TCP": {"443": {"HTTPS": True}, "8443": {"HTTPS": True}},
+    "Web": {
+        "home-server.tail0example.ts.net:443": {"Handlers": {"/": {"Proxy": "http://127.0.0.1:7000"}}},
+        "home-server.tail0example.ts.net:8443": {"Handlers": {"/api/telephony": {"Proxy": "http://127.0.0.1:7000/api/telephony"}}},
+    },
+    "AllowFunnel": {"home-server.tail0example.ts.net:8443": True},
+}
+
+if args == ["status", "--json"]:
+    print(json.dumps(STATUS))
+elif args[:1] == ["ping"]:
+    target = args[-1]
+    if target in ("100.64.0.2", "gaming-pc"):
+        print(f"pong from gaming-pc ({target}) via DERP(nyc) in 31ms")
+    else:
+        print(f"ping \"{target}\" timed out", file=sys.stderr)
+        sys.exit(1)
+elif args == ["serve", "status", "--json"]:
+    print(json.dumps(SERVE))
+elif args == ["ip"]:
+    print("100.64.0.1\nfd7a:115c:a1e0::1")
+else:
+    print("fake tailscale: refusing " + " ".join(args), file=sys.stderr)
+    sys.exit(2)

@@ -1,0 +1,37 @@
+{
+  "manifest_version": 1,
+  "id": "tailscale",
+  "name": "Tailscale",
+  "version": "0.1.0",
+  "description": "The machines on your tailnet for Odysseus: Settings > Devices, model discovery, Ping, and a Machines tab. Read only.",
+  "author": "Jaron Wilson",
+  "license": "AGPL-3.0",
+  "homepage": "https://github.com/Jaron-Wilson/odysseus-tailscale",
+  "min_core": "0.1",
+  "tags": ["network", "hardware", "monitoring"],
+  "provides": ["network.peers"],
+  "runtime": {
+    "type": "process",
+    "command": ["python", "-m", "tailscale_mod"],
+    "health": "/health",
+    "start": "boot",
+    "idle_stop_minutes": 0
+  },
+  "permissions": [],
+  "ui": {
+    "tabs": [{ "id": "machines", "title": "Machines", "icon": "devices", "path": "/", "section": "system", "after": "devices" }],
+    "home_cards": [{ "id": "summary", "title": "Tailnet", "path": "/cards/summary", "height": 80 }]
+  },
+  "tools": { "endpoint": "/mod/tools", "keywords": ["tailscale", "tailnet"] },
+  "tutorial": {
+    "version": 1,
+    "steps": [
+      { "title": "Your machines, from Tailscale",
+        "body": "This add-on reads the tailnet with this server's `tailscale` command. Odysseus uses it for **Settings > Devices**, to find model servers on your other machines and for **Ping**. Without it, MCP servers and devices you add by hand still work." },
+      { "title": "The Machines tab",
+        "body": "Every machine with its OS, address and when it was last seen, plus what **Tailscale Serve** and **Funnel** publish from this server. It only reads: it never changes Tailscale, Serve or Funnel.\n\nNothing shows? Install Tailscale on the server and sign in (`tailscale up`) yourself." },
+      { "title": "Ask the agent",
+        "body": "In a chat, ask *which of my machines are online?* or *ping my laptop over tailscale*." }
+    ]
+  }
+}
